@@ -1,59 +1,59 @@
 import os
 from pyrogram import Client
 from pyrogram.types import Message
-from pyrogram.handlers import MessageHandler
-import asyncio
 
 # Replace with your values
 API_ID = int(os.getenv("APITELEGRAM_ID"))   # Your API ID
 API_HASH = (os.getenv("APITELEGRAM_HASH"))
 SESSION_NAME = "name1"
-TARGET_CHANNEL = "@reng_tv"  # Format: @channel_username or channel ID (int)
+TARGET_CHANNEL = "@reng_tv" 
+# Format: @channel_username or channel ID (int)
+
+
+# Configuration
+  # <-- Replace with your API HASH
+
+SOURCE_CHAT_ID = (os.getenv("CHANNEL_ID"))  # <-- Source chat/channel ID
+SOURCE_MESSAGE_ID = 2525           # ID of the video message you want to download       # <-- Video message ID to download
+TARGET_CHANNEL = "@reng_tv"  # <-- Private channel username or ID
 
 # Progress callback
-def progress(current, total):
+def show_progress(current, total):
     percent = int(current * 100 / total)
-    print(f"Progress: {percent}%")
+    print(f"Progress: {percent}%", end="\r")
 
-# Main logic
-async def download_and_send_video(client: Client, msg: Message):
-    if not msg.video:
-        print("Not a video message. Skipping...")
-        return
+# Create client
+app = Client(SESSION_NAME, API_ID, API_HASH)
 
-    print(f"Downloading: {msg.video.file_name or 'Unnamed Video'}")
+# Start client
+app.start()
 
-    # Download the video
-    file_path = await msg.download(progress=progress)
-    print(f"Downloaded to: {file_path}")
+# Fetch the message
+msg: Message = app.get_messages(SOURCE_CHAT_ID, SOURCE_MESSAGE_ID)
 
-    print(f"Sending to channel: {TARGET_CHANNEL}")
-    await client.send_video(
+if msg.video:
+    print(f"Downloading video: {msg.video.file_name or 'Unnamed video'}")
+
+    # Download video
+    file_path = app.download_media(msg, progress=show_progress)
+    print("\nDownload complete.")
+
+    print("Sending to channel...")
+    # Send video to channel
+    app.send_video(
         TARGET_CHANNEL,
         video=file_path,
         caption="Forwarded Video",
-        progress=progress
+        progress=show_progress
     )
-    print("Upload complete.")
+    print("\nUpload complete.")
 
-    # Delete file to save space
+    # Delete file
     os.remove(file_path)
-    print("File deleted.")
+    print("Temporary file deleted.")
 
-# Wrapper function to process one message
-async def process_one_video(client: Client, chat_id: int, message_id: int):
-    msg = await client.get_messages(chat_id, message_id)
-    await download_and_send_video(client, msg)
+else:
+    print("This message does not contain a video.")
 
-# Entry point
-async def main():
-    async with Client(SESSION_NAME, API_ID, API_HASH) as app:
-        # Example usage:
-        source_chat_id = int(os.getenv("CHANNEL_ID"))  # Change to the source chat/channel ID
-        source_message_id = 2525           # ID of the video message you want to download
-
-        await process_one_video(app, source_chat_id, source_message_id)
-
-# Run the script
-if __name__ == "__main__":
-    asyncio.run(main())
+# Stop client
+app.stop()
