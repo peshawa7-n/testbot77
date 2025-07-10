@@ -49,8 +49,8 @@ async def process_one_video(client: Client, chat_id: int, message_id: int):
 async def main():
     async with Client(SESSION_NAME, API_ID, API_HASH) as app:
         # Example usage:
-        source_chat_id = -1001234567890  # Change to the source chat/channel ID
-        source_message_id = 42           # ID of the video message you want to download
+        source_chat_id = int(os.getenv("CHANNEL_ID"))  # Change to the source chat/channel ID
+        source_message_id = 2525           # ID of the video message you want to download
 
         await process_one_video(app, source_chat_id, source_message_id)
 
